@@ -2,9 +2,12 @@ import express from "express";
 import axios from "axios";
 
 const router = express.Router();
-const LASTFM_API_KEY = process.env.LASTFM_API_KEY;
 const LASTFM_BASE_URL = "https://ws.audioscrobbler.com/2.0/";
 const DEEZER_BASE_URL = "https://api.deezer.com";
+
+const getLastFmApiKey = () => {
+  return process.env.LASTFM_API_KEY;
+};
 
 async function getDeezerData(trackName, artistName) {
   try {
@@ -35,7 +38,6 @@ async function getDeezerData(trackName, artistName) {
       deezerUrl: bestMatch.link || null,
     };
   } catch (error) {
-    console.error(`Deezer error for ${trackName}:`, error.message);
     return null;
   }
 }
@@ -91,6 +93,11 @@ router.post("/recommendations", async (req, res) => {
       return res.status(400).json({ error: "Mood is required" });
     }
 
+    const LASTFM_API_KEY = getLastFmApiKey();
+    if (!LASTFM_API_KEY) {
+      return res.status(500).json({ error: "API key not configured" });
+    }
+
     const tags = parseMoodToTags(mood);
     const primaryTag = tags[0];
 
@@ -130,7 +137,6 @@ router.post("/recommendations", async (req, res) => {
       page: parseInt(page),
     });
   } catch (error) {
-    console.error("Last.fm API error:", error.response?.data || error.message);
     res.status(500).json({ error: "Failed to fetch recommendations" });
   }
 });
@@ -141,6 +147,11 @@ router.post("/similar", async (req, res) => {
 
     if (!trackName || !artistName) {
       return res.status(400).json({ error: "Track name and artist are required" });
+    }
+
+    const LASTFM_API_KEY = getLastFmApiKey();
+    if (!LASTFM_API_KEY) {
+      return res.status(500).json({ error: "API key not configured" });
     }
 
     const response = await axios.get(LASTFM_BASE_URL, {
@@ -175,7 +186,6 @@ router.post("/similar", async (req, res) => {
 
     res.json({ tracks: tracksWithDeezerData });
   } catch (error) {
-    console.error("Last.fm API error:", error.response?.data || error.message);
     res.status(500).json({ error: "Failed to fetch similar tracks" });
   }
 });
@@ -186,6 +196,11 @@ router.get("/search", async (req, res) => {
 
     if (!query) {
       return res.status(400).json({ error: "Search query is required" });
+    }
+
+    const LASTFM_API_KEY = getLastFmApiKey();
+    if (!LASTFM_API_KEY) {
+      return res.status(500).json({ error: "API key not configured" });
     }
 
     const response = await axios.get(LASTFM_BASE_URL, {
@@ -218,13 +233,8 @@ router.get("/search", async (req, res) => {
 
     res.json({ tracks: tracksWithDeezerData });
   } catch (error) {
-    console.error("Last.fm API error:", error.response?.data || error.message);
     res.status(500).json({ error: "Failed to search tracks" });
   }
 });
 
 export default router;
-
-
-
-

@@ -1,5 +1,4 @@
 import React, { useState, useRef } from "react";
-import "./App.css";
 import "./Pulse.css";
 
 function App() {
@@ -44,7 +43,6 @@ function App() {
       setCurrentPage(data.page);
     } catch (err) {
       setError(err.message);
-      console.error("Error fetching recommendations:", err);
     } finally {
       setLoading(false);
     }
@@ -80,7 +78,6 @@ function App() {
       setCurrentTag(`Similar to ${trackName}`);
     } catch (err) {
       setError(err.message);
-      console.error("Error fetching similar tracks:", err);
     } finally {
       setLoading(false);
     }

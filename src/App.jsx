@@ -102,7 +102,7 @@ function App() {
 
   return (
     <div className="mood-search-container">
-      <h1>Pulse Mood Search</h1>
+      <h1>Pulse Audio</h1>
       <p>Tell me how you're feeling, and I'll recommend some music</p>
 
       <div className="search-box">

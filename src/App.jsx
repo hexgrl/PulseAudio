@@ -1,97 +1,23 @@
 import React, { useState, useRef } from "react";
 import "./Pulse.css";
+import { useMusicSearch } from "./useMusicSearch";
 
 function App() {
+  const {
+    tracks,
+    currentTag,
+    loading,
+    error,
+    handleSearch,
+    handleRefresh,
+    handleGetSimilar,
+  } = useMusicSearch();
   const [mood, setMood] = useState("");
-  const [tracks, setTracks] = useState([]);
-  const [currentTag, setCurrentTag] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [playingTrack, setPlayingTrack] = useState(null);
   const audioRef = useRef(null);
 
-  const handleSearch = async (page = null) => {
-    if (!mood.trim()) {
-      setError("How are you feeling?");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-
-    try {
-      const response = await fetch(
-        "http://localhost:3001/api/lastfm/recommendations",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            mood: mood,
-            ...(page && { page }),
-            limit: 10,
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch recommendations");
-      }
-
-      const data = await response.json();
-      const shuffled = data.tracks.sort(() => Math.random() - 0.5);
-      setTracks(shuffled);
-      setCurrentTag(data.tag);
-      setCurrentPage(data.page);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRefresh = () => {
-    handleSearch(currentPage + 1);
-  };
-
-  const handleGetSimilar = async (trackName, artistName) => {
-    setLoading(true);
-    setError("");
-
-    try {
-      const response = await fetch("http://localhost:3001/api/lastfm/similar", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          trackName,
-          artistName,
-          limit: 10,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch similar tracks");
-      }
-
-      const data = await response.json();
-      const shuffled = data.tracks.sort(() => Math.random() - 0.5);
-      setTracks(shuffled);
-      setCurrentTag(`Similar to ${trackName}`);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handlePlayPreview = (track) => {
-    if (!track.previewUrl) {
-      return;
-    }
+    if (!track.previewUrl) return;
 
     if (playingTrack === track.name) {
       audioRef.current.pause();
@@ -116,14 +42,14 @@ function App() {
           value={mood}
           onChange={(e) => setMood(e.target.value)}
           placeholder="e.g., I'm happy and wanna dance"
-          onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+          onKeyDown={(e) => e.key === "Enter" && handleSearch(mood)}
         />
-        <button onClick={() => handleSearch()} disabled={loading}>
+        <button onClick={() => handleSearch(mood)} disabled={loading}>
           {loading ? "Searching..." : "Find Music"}
         </button>
         {tracks.length > 0 && (
           <button
-            onClick={handleRefresh}
+            onClick={() => handleRefresh(mood)}
             disabled={loading}
             className="refresh-btn">
             {loading ? "Loading..." : "Show More Songs"}
@@ -138,8 +64,8 @@ function App() {
           <h2>Recommendations {currentTag && `(${currentTag})`}</h2>
 
           <div className="tracks-list">
-            {tracks.map((track, index) => (
-              <div key={index} className="track-item">
+            {tracks.map((track) => (
+              <div key={track.url} className="track-item">
                 <div className="track-image-container">
                   {track.image && (
                     <img
@@ -159,7 +85,8 @@ function App() {
                       }
                       aria-label={
                         playingTrack === track.name ? "Pause" : "Play"
-                      }></button>
+                      }
+                    />
                   )}
                 </div>
                 <div className="track-info">

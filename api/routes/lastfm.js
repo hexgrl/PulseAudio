@@ -11,9 +11,9 @@ const getLastFmApiKey = () => {
 
 async function getDeezerData(trackName, artistName) {
   try {
-    const cleanTrack = trackName.replace(/\(.*?\)/g, '').trim();
-    const cleanArtist = artistName.replace(/\(.*?\)/g, '').trim();
-    
+    const cleanTrack = trackName.replace(/\(.*?\)/g, "").trim();
+    const cleanArtist = artistName.replace(/\(.*?\)/g, "").trim();
+
     const query = `${cleanArtist} ${cleanTrack}`;
     const response = await axios.get(`${DEEZER_BASE_URL}/search`, {
       params: {
@@ -27,13 +27,19 @@ async function getDeezerData(trackName, artistName) {
       return null;
     }
 
-    const bestMatch = tracks.find(track => 
-      track.artist.name.toLowerCase().includes(cleanArtist.toLowerCase()) &&
-      track.title.toLowerCase().includes(cleanTrack.toLowerCase())
-    ) || tracks[0];
+    const bestMatch =
+      tracks.find(
+        (track) =>
+          track.artist.name.toLowerCase().includes(cleanArtist.toLowerCase()) &&
+          track.title.toLowerCase().includes(cleanTrack.toLowerCase()),
+      ) || tracks[0];
 
     return {
-      albumArt: bestMatch.album?.cover_xl || bestMatch.album?.cover_big || bestMatch.album?.cover_medium || null,
+      albumArt:
+        bestMatch.album?.cover_xl ||
+        bestMatch.album?.cover_big ||
+        bestMatch.album?.cover_medium ||
+        null,
       previewUrl: bestMatch.preview || null,
       deezerUrl: bestMatch.link || null,
     };
@@ -52,42 +58,91 @@ const moodToTags = {
   breakup: ["breakup", "heartbreak", "sad", "moving on"],
 };
 
+const moodKeywords = {
+  breakup: [
+    "cheat",
+    "breakup",
+    "ex ",
+    "dumped",
+    "left me",
+    "she left",
+    "he left",
+    "moving on",
+    "heartbroke",
+    "broke up",
+  ],
+  angry: ["mad", "angry", "pissed", "furious", "frustrated", "annoyed", "rage"],
+  sad: [
+    "sad",
+    "cry",
+    "depressed",
+    "down",
+    "lonely",
+    "miss",
+    "grief",
+    "lost",
+    "hurt",
+    "pain",
+  ],
+  happy: [
+    "happy",
+    "great",
+    "excited",
+    "good mood",
+    "hyped",
+    "stoked",
+    "amazing",
+  ],
+  chill: [
+    "chill",
+    "relax",
+    "calm",
+    "lazy",
+    "cozy",
+    "vibe",
+    "wind down",
+    "study",
+  ],
+  energetic: ["energy", "pump", "workout", "run", "hype", "motivated", "grind"],
+  romantic: ["love", "romantic", "crush", "date", "feelings", "miss you"],
+};
+
+const fallbackTags = [
+  "indie",
+  "alternative",
+  "pop",
+  "rock",
+  "soul",
+  "electronic",
+  "folk",
+  "hip-hop",
+];
+
 function parseMoodToTags(userInput) {
   const input = userInput.toLowerCase();
-  let tags = [];
+  const matchedMoods = [];
 
-  if (input.includes("cheat") || input.includes("breakup") || input.includes("ex")) {
-    tags.push(...moodToTags.breakup);
+  for (const [mood, keywords] of Object.entries(moodKeywords)) {
+    if (keywords.some((kw) => input.includes(kw))) {
+      matchedMoods.push(mood);
+    }
   }
-  if (input.includes("mad") || input.includes("angry") || input.includes("pissed")) {
-    tags.push(...moodToTags.angry);
-  }
-  if (input.includes("sad") || input.includes("cry") || input.includes("depressed")) {
-    tags.push(...moodToTags.sad);
-  }
-  if (input.includes("happy") || input.includes("great") || input.includes("excited")) {
-    tags.push(...moodToTags.happy);
-  }
-  if (input.includes("chill") || input.includes("relax") || input.includes("calm")) {
-    tags.push(...moodToTags.chill);
-  }
-  if (input.includes("energy") || input.includes("pump") || input.includes("workout")) {
-    tags.push(...moodToTags.energetic);
-  }
-  if (input.includes("love") || input.includes("romantic") || input.includes("crush")) {
-    tags.push(...moodToTags.romantic);
-  }
+
+  const tags = [...new Set(matchedMoods.flatMap((m) => moodToTags[m]))];
 
   if (tags.length === 0) {
-    tags = ["popular", "indie"];
+    const random =
+      fallbackTags[Math.floor(Math.random() * fallbackTags.length)];
+    return [random];
   }
 
-  return [...new Set(tags)].slice(0, 3);
+  return tags.slice(0, 3);
 }
 
 router.post("/recommendations", async (req, res) => {
   try {
-    const { mood, page = 1, limit = 10 } = req.body;
+    const { mood, limit = 10 } = req.body;
+    const page = req.body.page || Math.floor(Math.random() * 5) + 1;
 
     if (!mood) {
       return res.status(400).json({ error: "Mood is required" });
@@ -99,7 +154,7 @@ router.post("/recommendations", async (req, res) => {
     }
 
     const tags = parseMoodToTags(mood);
-    const primaryTag = tags[0];
+    const primaryTag = tags[Math.floor(Math.random() * tags.length)];
 
     const response = await axios.get(LASTFM_BASE_URL, {
       params: {
@@ -117,8 +172,9 @@ router.post("/recommendations", async (req, res) => {
     const tracksWithDeezerData = await Promise.all(
       lastfmTracks.map(async (track) => {
         const deezerData = await getDeezerData(track.name, track.artist.name);
-        const lastfmImage = track.image[3]?.["#text"] || track.image[2]?.["#text"] || "";
-        
+        const lastfmImage =
+          track.image[3]?.["#text"] || track.image[2]?.["#text"] || "";
+
         return {
           name: track.name,
           artist: track.artist.name,
@@ -127,7 +183,7 @@ router.post("/recommendations", async (req, res) => {
           previewUrl: deezerData?.previewUrl || null,
           deezerUrl: deezerData?.deezerUrl || null,
         };
-      })
+      }),
     );
 
     res.json({
@@ -146,7 +202,9 @@ router.post("/similar", async (req, res) => {
     const { trackName, artistName, limit = 10 } = req.body;
 
     if (!trackName || !artistName) {
-      return res.status(400).json({ error: "Track name and artist are required" });
+      return res
+        .status(400)
+        .json({ error: "Track name and artist are required" });
     }
 
     const LASTFM_API_KEY = getLastFmApiKey();
@@ -170,8 +228,9 @@ router.post("/similar", async (req, res) => {
     const tracksWithDeezerData = await Promise.all(
       lastfmTracks.map(async (track) => {
         const deezerData = await getDeezerData(track.name, track.artist.name);
-        const lastfmImage = track.image[3]?.["#text"] || track.image[2]?.["#text"] || "";
-        
+        const lastfmImage =
+          track.image[3]?.["#text"] || track.image[2]?.["#text"] || "";
+
         return {
           name: track.name,
           artist: track.artist.name,
@@ -181,7 +240,7 @@ router.post("/similar", async (req, res) => {
           previewUrl: deezerData?.previewUrl || null,
           deezerUrl: deezerData?.deezerUrl || null,
         };
-      })
+      }),
     );
 
     res.json({ tracks: tracksWithDeezerData });
@@ -218,8 +277,9 @@ router.get("/search", async (req, res) => {
     const tracksWithDeezerData = await Promise.all(
       lastfmTracks.map(async (track) => {
         const deezerData = await getDeezerData(track.name, track.artist);
-        const lastfmImage = track.image[3]?.["#text"] || track.image[2]?.["#text"] || "";
-        
+        const lastfmImage =
+          track.image[3]?.["#text"] || track.image[2]?.["#text"] || "";
+
         return {
           name: track.name,
           artist: track.artist,
@@ -228,7 +288,7 @@ router.get("/search", async (req, res) => {
           previewUrl: deezerData?.previewUrl || null,
           deezerUrl: deezerData?.deezerUrl || null,
         };
-      })
+      }),
     );
 
     res.json({ tracks: tracksWithDeezerData });

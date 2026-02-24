@@ -11,7 +11,7 @@ function App() {
   const [playingTrack, setPlayingTrack] = useState(null);
   const audioRef = useRef(null);
 
-  const handleSearch = async (page = 1) => {
+  const handleSearch = async (page = null) => {
     if (!mood.trim()) {
       setError("How are you feeling?");
       return;
@@ -21,24 +21,28 @@ function App() {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:3001/api/lastfm/recommendations", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        "http://localhost:3001/api/lastfm/recommendations",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            mood: mood,
+            ...(page && { page }),
+            limit: 10,
+          }),
         },
-        body: JSON.stringify({
-          mood: mood,
-          page: page,
-          limit: 10,
-        }),
-      });
+      );
 
       if (!response.ok) {
         throw new Error("Failed to fetch recommendations");
       }
 
       const data = await response.json();
-      setTracks(data.tracks);
+      const shuffled = data.tracks.sort(() => Math.random() - 0.5);
+      setTracks(shuffled);
       setCurrentTag(data.tag);
       setCurrentPage(data.page);
     } catch (err) {
@@ -74,7 +78,8 @@ function App() {
       }
 
       const data = await response.json();
-      setTracks(data.tracks);
+      const shuffled = data.tracks.sort(() => Math.random() - 0.5);
+      setTracks(shuffled);
       setCurrentTag(`Similar to ${trackName}`);
     } catch (err) {
       setError(err.message);
@@ -111,13 +116,16 @@ function App() {
           value={mood}
           onChange={(e) => setMood(e.target.value)}
           placeholder="e.g., I'm happy and wanna dance"
-          onKeyPress={(e) => e.key === "Enter" && handleSearch(1)}
+          onKeyPress={(e) => e.key === "Enter" && handleSearch()}
         />
-        <button onClick={() => handleSearch(1)} disabled={loading}>
+        <button onClick={() => handleSearch()} disabled={loading}>
           {loading ? "Searching..." : "Find Music"}
         </button>
         {tracks.length > 0 && (
-          <button onClick={handleRefresh} disabled={loading} className="refresh-btn">
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="refresh-btn">
             {loading ? "Loading..." : "Show More Songs"}
           </button>
         )}
@@ -134,28 +142,41 @@ function App() {
               <div key={index} className="track-item">
                 <div className="track-image-container">
                   {track.image && (
-                    <img src={track.image} alt={track.name} className="track-image" />
+                    <img
+                      src={track.image}
+                      alt={track.name}
+                      className="track-image"
+                    />
                   )}
                   {track.previewUrl && (
                     <button
-                      className={`play-preview-btn ${playingTrack === track.name ? 'playing' : ''}`}
+                      className={`play-preview-btn ${playingTrack === track.name ? "playing" : ""}`}
                       onClick={() => handlePlayPreview(track)}
-                      title={playingTrack === track.name ? "Pause" : "Play 30s preview"}
-                      aria-label={playingTrack === track.name ? "Pause" : "Play"}
-                    >
-                    </button>
+                      title={
+                        playingTrack === track.name
+                          ? "Pause"
+                          : "Play 30s preview"
+                      }
+                      aria-label={
+                        playingTrack === track.name ? "Pause" : "Play"
+                      }></button>
                   )}
                 </div>
                 <div className="track-info">
                   <h3>{track.name}</h3>
                   <p>{track.artist}</p>
                   {track.match && (
-                    <span className="match-score">Match: {(track.match * 100).toFixed(0)}%</span>
+                    <span className="match-score">
+                      Match: {(track.match * 100).toFixed(0)}%
+                    </span>
                   )}
                 </div>
                 <div className="track-actions">
                   {track.deezerUrl && (
-                    <a href={track.deezerUrl} target="_blank" rel="noopener noreferrer">
+                    <a
+                      href={track.deezerUrl}
+                      target="_blank"
+                      rel="noopener noreferrer">
                       Open in Deezer
                     </a>
                   )}
@@ -164,8 +185,7 @@ function App() {
                   </a>
                   <button
                     onClick={() => handleGetSimilar(track.name, track.artist)}
-                    className="similar-btn"
-                  >
+                    className="similar-btn">
                     Find Similar
                   </button>
                 </div>
@@ -185,7 +205,3 @@ function App() {
 }
 
 export default App;
-
-
-
-

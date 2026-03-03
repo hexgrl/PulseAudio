@@ -31,7 +31,7 @@ npm install
 ```
 
 2. Create a `.env` file in the `api` directory:
-   - Copy `api/example.env` to `api/.env`
+   - Copy `api/example.env` to `api/config/.env`
    - Update `LASTFM_API_KEY` with your actual Last.fm API key
 
 3. Run the development server:

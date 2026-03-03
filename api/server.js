@@ -12,7 +12,11 @@ dotenv.config({ path: join(__dirname, "config", ".env") });
 
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "https://pulse-audio.vercel.app",
+  }),
+);
 app.use(express.json());
 
 app.use("/api/lastfm", lastfmRoutes);

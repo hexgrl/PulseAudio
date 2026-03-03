@@ -25,7 +25,7 @@ function App() {
     } else {
       if (audioRef.current) {
         audioRef.current.src = track.previewUrl;
-        audioRef.current.play();
+        audioRef.current.play().catch(() => setPlayingTrack(null));
         setPlayingTrack(track.name);
       }
     }
@@ -122,11 +122,7 @@ function App() {
         </div>
       )}
 
-      <audio
-        ref={audioRef}
-        onEnded={() => setPlayingTrack(null)}
-        onPause={() => setPlayingTrack(null)}
-      />
+      <audio ref={audioRef} onEnded={() => setPlayingTrack(null)} />
     </div>
   );
 }

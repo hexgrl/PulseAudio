@@ -193,6 +193,7 @@ router.post("/recommendations", async (req, res) => {
       page: parseInt(page),
     });
   } catch (error) {
+    console.error("[recommendations]", error.message);
     res.status(500).json({ error: "Failed to fetch recommendations" });
   }
 });
@@ -245,55 +246,8 @@ router.post("/similar", async (req, res) => {
 
     res.json({ tracks: tracksWithDeezerData });
   } catch (error) {
+    console.error("[similar]", error.message);
     res.status(500).json({ error: "Failed to fetch similar tracks" });
-  }
-});
-
-router.get("/search", async (req, res) => {
-  try {
-    const { query, limit = 10 } = req.query;
-
-    if (!query) {
-      return res.status(400).json({ error: "Search query is required" });
-    }
-
-    const LASTFM_API_KEY = getLastFmApiKey();
-    if (!LASTFM_API_KEY) {
-      return res.status(500).json({ error: "API key not configured" });
-    }
-
-    const response = await axios.get(LASTFM_BASE_URL, {
-      params: {
-        method: "track.search",
-        track: query,
-        api_key: LASTFM_API_KEY,
-        format: "json",
-        limit: limit,
-      },
-    });
-
-    const lastfmTracks = response.data.results.trackmatches.track;
-
-    const tracksWithDeezerData = await Promise.all(
-      lastfmTracks.map(async (track) => {
-        const deezerData = await getDeezerData(track.name, track.artist);
-        const lastfmImage =
-          track.image[3]?.["#text"] || track.image[2]?.["#text"] || "";
-
-        return {
-          name: track.name,
-          artist: track.artist,
-          url: track.url,
-          image: deezerData?.albumArt || lastfmImage,
-          previewUrl: deezerData?.previewUrl || null,
-          deezerUrl: deezerData?.deezerUrl || null,
-        };
-      }),
-    );
-
-    res.json({ tracks: tracksWithDeezerData });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to search tracks" });
   }
 });
 

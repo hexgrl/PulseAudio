@@ -41,7 +41,7 @@ function App() {
           type="text"
           value={mood}
           onChange={(e) => setMood(e.target.value)}
-          placeholder="e.g., I'm happy and wanna dance"
+          placeholder="e.g., I'm feeling happy today"
           onKeyDown={(e) => e.key === "Enter" && handleSearch(mood)}
         />
         <button onClick={() => handleSearch(mood)} disabled={loading}>

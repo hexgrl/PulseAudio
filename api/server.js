@@ -14,7 +14,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: "https://pulse-audio.vercel.app",
+    origin: ["https://pulse-audio.vercel.app", "http://localhost:5174"],
   }),
 );
 app.use(express.json());
